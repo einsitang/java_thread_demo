@@ -54,3 +54,7 @@ MT
 EL
 6.8s
 ```
+```
+移除 MT 使用vertxClient 作为 Client 的方式，因为一旦这样做已经就是事件轮训了，new Thread是无用功
+
+```

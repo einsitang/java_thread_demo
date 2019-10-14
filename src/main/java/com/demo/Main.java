@@ -34,7 +34,7 @@ public class Main {
     /**
      * 模拟CPU密集计算
      */
-    static int pressure = 0;
+    static int pressure = 100;
 
     static String HOST = "www.zhihu.com";
     static String URI = "/question/287421003/answer/814015100";
@@ -122,45 +122,25 @@ public class Main {
                 @Override
                 public void run() {
 //                    long beginTime = System.currentTimeMillis();
-//                    HttpGet httpGet = new HttpGet(URL);
-//                    org.apache.http.HttpResponse resp;
-//                    String body = null;
-//                    try {
-//
-//                        resp = httpClient.execute(httpGet);
-//                        if (resp.getStatusLine().getStatusCode() == 200) {
-//                            body = EntityUtils.toString(resp.getEntity(), "UTF-8");
-//                        }
-//
-//                    } catch (IOException e) {
-//                        System.err.println("error : " + e.getMessage());
-//                        // retry
-//                    }
-//                    JobUtils.dosomeThing(taskName, body, pressure);
-//                    long endTime = System.currentTimeMillis();
+                    HttpGet httpGet = new HttpGet(URL);
+                    org.apache.http.HttpResponse resp;
+                    String body = null;
+                    try {
+
+                        resp = httpClient.execute(httpGet);
+                        if (resp.getStatusLine().getStatusCode() == 200) {
+                            body = EntityUtils.toString(resp.getEntity(), "UTF-8");
+                        }
+
+                    } catch (IOException e) {
+                        System.err.println("error : " + e.getMessage());
+                        // retry
+                    }
+                    JobUtils.dosomeThing(taskName, body, pressure);
+                    long endTime = System.currentTimeMillis();
 //                    System.out.println(String.format("task [%s] run time : %d ms", taskName, endTime - beginTime));
 //                    System.out.println(String.format("task [%s] timestamp : %d", taskName, System.currentTimeMillis()));
-//                    timing();
-                    RequestOptions requestOptions = new RequestOptions()
-                            .setSsl(true)
-                            .setPort(PORT)
-                            .setHost(HOST)
-                            .setURI(URI);
-                    vertxClient.request(HttpMethod.GET, requestOptions)
-                            .send(ar -> {
-
-                                if (!ar.succeeded()) {
-                                    System.err.println("error : " + ar.cause().getMessage());
-                                    // retry
-                                } else {
-                                    HttpResponse<Buffer> response = ar.result();
-                                    if (response.statusCode() == 200) {
-                                        String body = response.bodyAsString();
-                                        JobUtils.dosomeThing(taskName, body, pressure);
-                                    }
-                                }
-                                timing();
-                            });
+                    timing();
                 }
             });
             task.start();
