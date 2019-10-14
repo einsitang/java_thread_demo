@@ -11,6 +11,8 @@ import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.client.WebClient;
 import io.vertx.ext.web.client.WebClientOptions;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.config.CookieSpecs;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
@@ -25,7 +27,10 @@ public class Main {
     private static int taskCount = 90;
     private static int taskDoneCount = 0;
 
-    static final HttpClient client = HttpClients.createDefault();
+    static final HttpClient client = HttpClients.custom()
+            .setDefaultRequestConfig(RequestConfig.custom()
+                    .setCookieSpec(CookieSpecs.STANDARD).build())
+            .build();
 
     static String HOST = "www.zhihu.com";
     static String URI = "/question/287421003/answer/814015100";
@@ -34,7 +39,7 @@ public class Main {
     /**
      * 模拟CPU密集计算
      */
-    static int pressure = 1500;
+    static int pressure = 100;
 
     public static void timing() {
         taskDoneCount++;
@@ -80,6 +85,7 @@ public class Main {
     }
 
     private static void multiThreading() {
+
         Thread task;
 
         final String URL = "https://" + HOST + URI;
