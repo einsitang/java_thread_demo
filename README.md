@@ -46,13 +46,14 @@ done time : 8114 ms
 ```
 更新EL(eventloop)和MT(multiThreading)统一使用vertxClient作为Client
 
-使用相同的vertxClient作为Client 各自取最优的 样本结果：
+使用相同的vertxClient作为Client 各自取最优的 样本结果 ：
 pressure = 0;
 taskCount = 90
 MT
 8.7s
 EL
 6.8s
+【当前样本无意义，MT更换VertxClient那一刻它就是事件轮训机制，只能证明多出的时间是无效线程的创建和销毁的损耗】
 ```
 ```
 移除 MT 使用vertxClient 作为 Client 的方式，因为一旦这样做已经就是事件轮训了，new Thread是无用功
