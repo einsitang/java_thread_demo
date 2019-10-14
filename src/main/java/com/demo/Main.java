@@ -24,22 +24,46 @@ import java.util.Collections;
 public class Main {
 
     private static long programBeginTime = System.currentTimeMillis();
-    private static int taskCount = 90;
     private static int taskDoneCount = 0;
 
-    static final HttpClient client = HttpClients.custom()
-            .setDefaultRequestConfig(RequestConfig.custom()
-                    .setCookieSpec(CookieSpecs.STANDARD).build())
-            .build();
+    /**
+     * 任务数
+     */
+    private static int taskCount = 90;
+
+    /**
+     * 模拟CPU密集计算
+     */
+    static int pressure = 0;
 
     static String HOST = "www.zhihu.com";
     static String URI = "/question/287421003/answer/814015100";
     static int PORT = 443;
 
-    /**
-     * 模拟CPU密集计算
-     */
-    static int pressure = 100;
+
+
+    static HttpClient httpClient = null;
+    static WebClient vertxClient = null;
+    static {
+        VertxOptions vertxOptions = new VertxOptions().setAddressResolverOptions(
+                new AddressResolverOptions().setSearchDomains(Collections.emptyList())
+        );
+        Vertx vertx = Vertx.vertx(vertxOptions);
+
+        SelfSignedCertificate certificate = SelfSignedCertificate.create();
+
+        WebClientOptions webClientoptions = new WebClientOptions()
+                .setSsl(true)
+                .setTrustAll(true)
+                .setKeyCertOptions(certificate.keyCertOptions())
+                .setTrustOptions(certificate.trustOptions());
+        vertxClient = WebClient.create(vertx, webClientoptions);
+
+        httpClient = HttpClients.custom()
+                .setDefaultRequestConfig(RequestConfig.custom()
+                        .setCookieSpec(CookieSpecs.STANDARD).build())
+                .build();
+    }
 
     public static void timing() {
         taskDoneCount++;
@@ -54,23 +78,23 @@ public class Main {
 //        justNewThreadYouWant();
 
         // 单纯的线程的爬虫
-//        multiThreading();
+        multiThreading();
 
         // 事件轮训线程复用的爬虫
-        eventLoop();
+//        eventLoop();
     }
 
     /**
      * 你喜欢创建多少个线程都可以，都在wating，有意义吗？
      */
-    private static void justNewThreadYouWant(){
+    private static void justNewThreadYouWant() {
         int threadCount = 9000;
         Thread thread;
-        for(int i=0;i<threadCount;++i){
+        for (int i = 0; i < threadCount; ++i) {
             thread = new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    synchronized (this){
+                    synchronized (this) {
                         try {
                             wait();
                         } catch (InterruptedException e) {
@@ -80,7 +104,8 @@ public class Main {
 
                 }
             });
-            thread.start();;
+            thread.start();
+
         }
     }
 
@@ -97,25 +122,45 @@ public class Main {
                 @Override
                 public void run() {
 //                    long beginTime = System.currentTimeMillis();
-                    HttpGet httpGet = new HttpGet(URL);
-                    org.apache.http.HttpResponse resp;
-                    String body = null;
-                    try {
-
-                        resp = client.execute(httpGet);
-                        if (resp.getStatusLine().getStatusCode() == 200) {
-                            body = EntityUtils.toString(resp.getEntity(), "UTF-8");
-                        }
-
-                    } catch (IOException e) {
-                        System.err.println("error : " + e.getMessage());
-                        // retry
-                    }
-                    JobUtils.dosomeThing(taskName, body, pressure);
+//                    HttpGet httpGet = new HttpGet(URL);
+//                    org.apache.http.HttpResponse resp;
+//                    String body = null;
+//                    try {
+//
+//                        resp = httpClient.execute(httpGet);
+//                        if (resp.getStatusLine().getStatusCode() == 200) {
+//                            body = EntityUtils.toString(resp.getEntity(), "UTF-8");
+//                        }
+//
+//                    } catch (IOException e) {
+//                        System.err.println("error : " + e.getMessage());
+//                        // retry
+//                    }
+//                    JobUtils.dosomeThing(taskName, body, pressure);
 //                    long endTime = System.currentTimeMillis();
 //                    System.out.println(String.format("task [%s] run time : %d ms", taskName, endTime - beginTime));
 //                    System.out.println(String.format("task [%s] timestamp : %d", taskName, System.currentTimeMillis()));
-                    timing();
+//                    timing();
+                    RequestOptions requestOptions = new RequestOptions()
+                            .setSsl(true)
+                            .setPort(PORT)
+                            .setHost(HOST)
+                            .setURI(URI);
+                    vertxClient.request(HttpMethod.GET, requestOptions)
+                            .send(ar -> {
+
+                                if (!ar.succeeded()) {
+                                    System.err.println("error : " + ar.cause().getMessage());
+                                    // retry
+                                } else {
+                                    HttpResponse<Buffer> response = ar.result();
+                                    if (response.statusCode() == 200) {
+                                        String body = response.bodyAsString();
+                                        JobUtils.dosomeThing(taskName, body, pressure);
+                                    }
+                                }
+                                timing();
+                            });
                 }
             });
             task.start();
@@ -123,20 +168,6 @@ public class Main {
     }
 
     private static void eventLoop() {
-
-        VertxOptions vertxOptions = new VertxOptions().setAddressResolverOptions(
-                new AddressResolverOptions().setSearchDomains(Collections.emptyList())
-        );
-        Vertx vertx = Vertx.vertx(vertxOptions);
-
-        SelfSignedCertificate certificate = SelfSignedCertificate.create();
-
-        WebClientOptions webClientoptions = new WebClientOptions()
-                .setSsl(true)
-                .setTrustAll(true)
-                .setKeyCertOptions(certificate.keyCertOptions())
-                .setTrustOptions(certificate.trustOptions());
-        WebClient client = WebClient.create(vertx, webClientoptions);
 
         for (int i = 0; i < taskCount; ++i) {
 
@@ -146,18 +177,18 @@ public class Main {
                     .setPort(PORT)
                     .setHost(HOST)
                     .setURI(URI);
-            client.request(HttpMethod.GET, requestOptions)
+            vertxClient.request(HttpMethod.GET, requestOptions)
                     .send(ar -> {
 
                         if (!ar.succeeded()) {
                             System.err.println("error : " + ar.cause().getMessage());
                             // retry
-                        }else{
+                        } else {
                             HttpResponse<Buffer> response = ar.result();
                             if (response.statusCode() == 200) {
                                 String body = response.bodyAsString();
                                 JobUtils.dosomeThing(taskName, body, pressure);
-                                System.out.println(String.format("done time: %d", System.currentTimeMillis()));
+//                                System.out.println(String.format("done time: %d", System.currentTimeMillis()));
                             }
                         }
                         timing();
