@@ -46,7 +46,7 @@ done time : 8114 ms
 ```
 更新EL(eventloop)和MT(multiThreading)统一使用vertxClient作为Client
 
-使用相同的vertxClient作为Client 样本结果：
+使用相同的vertxClient作为Client 各自取最优的 样本结果：
 pressure = 0;
 taskCount = 90
 MT
