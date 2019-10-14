@@ -41,3 +41,16 @@ task [EL_89] job run time : 31 ms
 done time: 1571033947735
 done time : 8114 ms
 ```
+
+# changelog
+```
+更新EL(eventloop)和MT(multiThreading)统一使用vertxClient作为Client
+
+使用相同的vertxClient作为Client 样本结果：
+pressure = 0;
+taskCount = 90
+MT
+8.7s
+EL
+6.8s
+```
